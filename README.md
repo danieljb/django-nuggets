@@ -1,12 +1,12 @@
 # Django Nuggets #
 
-A Django app similar to django-flatblocks or django-chunks to add dynamic snippets of content to a django website. 
+A Django app similar to [django-flatblocks][flatblocks] or [django-chunks][chunks] to add dynamic snippets of content to a django website. 
 
 # Installation #
 
 Install using pip:
 
-    pip install -e git+https://https://github.com/danieljb/django-nuggets
+    pip install -e git+https://github.com/danieljb/django-nuggets
 
 # Usage #
 
@@ -70,6 +70,12 @@ If you only want to retrieve a context variable use it like this:
     <p>{{ about_text }}</p>
 
 
+# About #
+
+There is a whole bunch of apps like [django-nuggets][nuggets], which differ just slightly from each other. While [django-flatblocks][flatblocks] might be the most elaborated, [django-chunks][chunks] is the lightweight version. 
+django-nuggets were started to fulfil the needs of one specific project and feature two template-tags and a base model for inheritance and customization. So it is again slightly different. Development was heavily inspired from both, flatblocks and chunks. Thus some methods are derived from these projects. 
+
+
 # Copyright #
 
 Django Nuggets is distributed under GNU General Public License. 
@@ -78,3 +84,7 @@ with Django Nuggets.
 If not, see <http://www.gnu.org/licenses/>.
 
 Copyright (c) 2011, Daniel J. Becker
+
+[nuggets]: https://github.com/danieljb/django-nuggets   "django-nuggets"
+[flatblocks]: https://github.com/zerok/django-flatblocks/   "django-flatblocks"
+[chunks]: https://github.com/clintecker/django-chunks   "django-chunks"

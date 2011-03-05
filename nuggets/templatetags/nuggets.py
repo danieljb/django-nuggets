@@ -6,19 +6,23 @@ from django.template import Library, Node, TemplateSyntaxError, \
     TemplateDoesNotExist, Variable, VariableDoesNotExist
 from django.template.loader import select_template
 
+from nuggets.conf import settings as nugget_settings
 from nuggets.models import Nugget
-
-
-CACHE_PREFIX = "nugget_"
 
 
 register = Library()
 
 
 # Usage:
-# {% get_nugget "key" for "applabel.modellabel" with cache_time="3600" as "context_variable" %}
-# {% render_nugget "key" for "applabel.modellabel" with template="nuggets/model_nugget.html"
-#       and template_context_variable="nugget" and cache_time="3600" as "context_variable" %}
+# {% get_nugget "key" for "applabel.modellabel" with cache_time="3600"
+#    as "context_variable" %}
+#
+# or
+#
+# {% render_nugget "key" for "applabel.modellabel" with
+#    template="nuggets/model_nugget.html" and
+#    template_context_variable="nugget" and cache_time="3600" as
+#    "context_variable" %}
 
 def parse_arguments(token, accepted_keys):
     tokens = token.split_contents()
@@ -32,9 +36,9 @@ def parse_arguments(token, accepted_keys):
         })
         tokens = tokens[4:]
     else:
-        raise template.TemplateSyntaxError(
-            "%s requires at least one argument defining which app and model to use as nugget" % tag_name
-        )
+        raise TemplateSyntaxError(
+            "{0} requires at least one argument defining"
+            " which app and model to use as nugget".format(tag_name))
 
     if len(tokens) > 1 and tokens[-2] == 'as':
         tag_def['context_variable'] = tokens[-1]
@@ -46,21 +50,20 @@ def parse_arguments(token, accepted_keys):
             if i == 0:
                 if argument != 'with':
                     raise TemplateSyntaxError(
-                        "%s tag requires parameters specified using the \"with\" keyword"
-                            % tokens['tag_name']
-                    )
+                        "{0} tag requires parameters specified using"
+                        " the \"with\" keyword".format(tokens['tag_name']))
             elif not i % 2:
                 if argument != 'and':
                     raise TemplateSyntaxError(
-                        "%s tag parameters have to be concatenated with \"and\" keyword"
-                            % tokens['tag_name']
-                    )
+                        "{0} tag parameters have to be concatenated"
+                        " with \"and\" keyword".format(tokens['tag_name']))
             else:
                 key, value = argument.split('=')
                 if key not in accepted_keys:
                     raise TemplateSyntaxError(
-                        "%s tag does not accept the %r keyword" % (tag_def['tag_name'], key)
-                    )
+                        "{0} tag does not accept the {1} keyword".format(
+                            tag_def['tag_name'],
+                            key))
                 args.update({key.encode('ascii'): value})
 
     tag_def.update({'arguments': args})
@@ -76,7 +79,10 @@ def get_nugget(parser, token):
 
 
 def render_nugget(parser, token):
-    ACCEPTED_KEYS = ('cache_time', 'template_path', 'template_context_variable')
+    ACCEPTED_KEYS = ('cache_time',
+                     'template_path',
+                     'template_context_variable')
+
     tokens = parse_arguments(token, ACCEPTED_KEYS)
     tokens.pop('tag_name')
 
@@ -102,7 +108,8 @@ class NuggetNode(Node):
         try:
             return Variable(var).resolve(context)
         except VariableDoesNotExist:
-            raise TemplateSyntaxError("Variable %s does not exist" % var)
+            raise TemplateSyntaxError(
+                "Variable {0} does not exist".format(var))
 
     def get_model(self, modelname, context):
         applabel, modellabel = self.resolve(modelname, context).split(".")
@@ -111,31 +118,35 @@ class NuggetNode(Node):
 
     def get_content_object(self, related_model, nugget_key):
         if not issubclass(related_model, Nugget):
-            raise TemplateSyntaxError("Model %s must be subclass of Nugget" % related_model)
+            raise TemplateSyntaxError(
+                "Model {0} must be subclass of Nugget".format(related_model))
         try:
             return related_model._default_manager.get(key=nugget_key)
         except related_model.DoesNotExist:
             raise TemplateSyntaxError(
-                "Could not resolve instance for model %s with key %s" % (related_model, nugget_key)
-            )
+                "Could not resolve instance for model {0} with key {1}".format(
+                    related_model, nugget_key))
 
     def render_to_template(self, content, context):
-        template_context_variable = self.arguments.get('template_context_variable')
+        template_context_variable = self.arguments.get(
+                                        'template_context_variable')
         template_path = self.arguments.get('template_path')
         template_paths = []
 
         if template_path:
             template_paths.append(self.resolve(template_path, context))
         app, model = self.resolve(self.app_model, context).lower().split(".")
-        template_paths.extend([
-            '%s/%s_%s.html' % (app, model, self.nugget_key),
-            '%s/%s_nugget.html' % (app, model)
-        ])
+        template_paths.extend(['{0}/{1}_{2}.html'.format(app,
+                                                         model,
+                                                         self.nugget_key),
+                               '{0}/{1}_nugget.html'.format(app, model)])
 
         try:
             t = select_template(template_paths)
         except TemplateDoesNotExist:
-            raise TemplateSyntaxError("Could not find template in %s" % template_paths)
+            raise TemplateSyntaxError(
+                "Could not find template in {0}".format(template_paths))
+
         if template_context_variable:
             context[self.resolve(template_context_variable, context)] = content
         else:
@@ -147,11 +158,13 @@ class NuggetNode(Node):
         cache_time = 0
 
         if 'cache_time' in self.arguments:
-            cache_time = self.resolve(self.arguments.get('cache_time'), context)
+            cache_time = self.resolve(self.arguments.get('cache_time'),
+                                      context)
 
         related_model = self.get_model(self.app_model, context)
 
-        cache_key = CACHE_PREFIX + self.nugget_key
+        cache_key = '{prefix}{key}'.format(prefix=nugget_settings.CACHE_PREFIX,
+                                           key=self.nugget_key)
         content = cache.get(cache_key)
         if content is None:
             content = self.get_content_object(related_model, self.nugget_key)
@@ -164,7 +177,7 @@ class NuggetNode(Node):
         if self.context_variable:
             context[self.resolve(self.context_variable, context)] = content
         else:
-            context['nugget_%s' % self.nugget_key] = content
+            context['nugget_{0}'.format(self.nugget_key)] = content
         return ''
 
 
