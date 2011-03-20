@@ -136,10 +136,10 @@ class NuggetNode(Node):
         if template_path:
             template_paths.append(self.resolve(template_path, context))
         app, model = self.resolve(self.app_model, context).lower().split(".")
-        template_paths.extend(['{0}/{1}_{2}.html'.format(app,
+        template_paths.extend(['{0}/{1}/{2}.html'.format(app,
                                                          model,
                                                          self.nugget_key),
-                               '{0}/{1}_nugget.html'.format(app, model)])
+                               '{0}/{1}/nugget.html'.format(app, model)])
 
         try:
             t = select_template(template_paths)
@@ -162,6 +162,9 @@ class NuggetNode(Node):
                                       context)
 
         related_model = self.get_model(self.app_model, context)
+        if not related_model:
+            raise TemplateSyntaxError(
+                "Could not resolve model name {0}".format(self.app_model))
 
         cache_key = '{prefix}{key}'.format(prefix=nugget_settings.CACHE_PREFIX,
                                            key=self.nugget_key)
