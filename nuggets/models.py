@@ -1,11 +1,10 @@
 
-from django.conf import settings
 from django.core.cache import cache
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext_lazy as _
 
-from nuggets.conf import settings as nugget_settings
+from nuggets.conf import settings
 
 
 # Create your models here.
@@ -23,7 +22,7 @@ class Nugget(models.Model):
         self.key = slugify(self.key)
         super(Nugget, self).save(*args, **kwargs)
 
-        cache.delete('{prefix}{key}'.format(nugget_settings.CACHE_PREFIX,
+        cache.delete('{prefix}{key}'.format(prefix=settings.CACHE_PREFIX,
                                             key=self.key,))
 
     def __unicode__(self):
