@@ -6,7 +6,7 @@ A Django app similar to [django-flatblocks][flatblocks] or [django-chunks][chunk
 
 Install using pip:
 
-    pip install -e git+https://github.com/danieljb/django-nuggets
+    pip install -e git+https://github.com/danieljb/django-nuggets#egg=nuggets
 
 # Usage #
 
